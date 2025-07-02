@@ -2,6 +2,7 @@ import requests
 import unittest
 import sys
 import os
+import json
 from datetime import datetime
 
 class TimeTrackerAPITester:
@@ -12,31 +13,85 @@ class TimeTrackerAPITester:
         self.api_url = f"{base_url}/api"
         self.tests_run = 0
         self.tests_passed = 0
+        self.cors_results = []
 
-    def run_test(self, name, method, endpoint, expected_status, data=None):
+    def run_test(self, name, method, endpoint, expected_status, data=None, check_cors=True, origin="http://example.com"):
         """Run a single API test"""
         url = f"{self.api_url}/{endpoint}"
         headers = {'Content-Type': 'application/json'}
+        
+        # Add origin header for CORS testing
+        if check_cors:
+            headers['Origin'] = origin
         
         self.tests_run += 1
         print(f"\n🔍 Testing {name}...")
         
         try:
-            if method == 'GET':
+            if method == 'OPTIONS':
+                # For OPTIONS requests, we need to add the headers that would be in a preflight request
+                headers['Access-Control-Request-Method'] = 'POST'
+                headers['Access-Control-Request-Headers'] = 'content-type'
+                response = requests.options(url, headers=headers)
+            elif method == 'GET':
                 response = requests.get(url, headers=headers)
             elif method == 'POST':
                 response = requests.post(url, json=data, headers=headers)
 
-            success = response.status_code == expected_status
+            # Check status code
+            status_success = response.status_code == expected_status
+            
+            # Check CORS headers if required
+            cors_success = True
+            cors_headers = {}
+            
+            if check_cors:
+                # Check for CORS headers
+                cors_headers = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers'),
+                    'Access-Control-Allow-Credentials': response.headers.get('Access-Control-Allow-Credentials')
+                }
+                
+                # For OPTIONS preflight requests, we expect all headers
+                if method == 'OPTIONS':
+                    cors_success = (
+                        cors_headers['Access-Control-Allow-Origin'] == '*' and
+                        cors_headers['Access-Control-Allow-Methods'] is not None and
+                        cors_headers['Access-Control-Allow-Headers'] is not None and
+                        cors_headers['Access-Control-Allow-Credentials'] == 'true'
+                    )
+                # For regular requests, we at least expect Allow-Origin
+                else:
+                    cors_success = cors_headers['Access-Control-Allow-Origin'] == '*'
+                
+                # Store CORS test results
+                self.cors_results.append({
+                    'endpoint': endpoint,
+                    'method': method,
+                    'cors_success': cors_success,
+                    'cors_headers': cors_headers
+                })
+            
+            success = status_success and (not check_cors or cors_success)
+            
             if success:
                 self.tests_passed += 1
                 print(f"✅ Passed - Status: {response.status_code}")
-                print(f"Response: {response.json()}")
+                if response.headers.get('content-type') == 'application/json' and response.content:
+                    print(f"Response: {response.json()}")
+                if check_cors:
+                    print(f"✅ CORS Headers: {json.dumps(cors_headers, indent=2)}")
             else:
-                print(f"❌ Failed - Expected {expected_status}, got {response.status_code}")
-                print(f"Response: {response.text}")
+                if not status_success:
+                    print(f"❌ Failed - Expected {expected_status}, got {response.status_code}")
+                    print(f"Response: {response.text}")
+                if check_cors and not cors_success:
+                    print(f"❌ Failed - CORS headers not properly configured")
+                    print(f"❌ CORS Headers: {json.dumps(cors_headers, indent=2)}")
 
-            return success, response.json() if success and response.content else {}
+            return success, response.json() if status_success and response.headers.get('content-type') == 'application/json' and response.content else {}
 
         except Exception as e:
             print(f"❌ Failed - Error: {str(e)}")
