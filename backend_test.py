@@ -97,25 +97,27 @@ class TimeTrackerAPITester:
             print(f"❌ Failed - Error: {str(e)}")
             return False, {}
 
-    def test_health_check(self):
+    def test_health_check(self, check_cors=True):
         """Test the health check endpoint"""
         return self.run_test(
             "Health Check",
             "GET",
             "health",
-            200
+            200,
+            check_cors=check_cors
         )
 
-    def test_root_endpoint(self):
+    def test_root_endpoint(self, check_cors=True):
         """Test the root API endpoint"""
         return self.run_test(
             "Root API Endpoint",
             "GET",
             "",
-            200
+            200,
+            check_cors=check_cors
         )
 
-    def test_submit_contact_form(self, name, email, company, phone, message):
+    def test_submit_contact_form(self, name, email, company, phone, message, check_cors=True):
         """Test submitting a contact form"""
         return self.run_test(
             "Contact Form Submission",
@@ -128,35 +130,49 @@ class TimeTrackerAPITester:
                 "user_company": company,
                 "user_phone": phone,
                 "message": message
-            }
+            },
+            check_cors=check_cors
         )
 
-    def test_get_contact_messages(self):
+    def test_get_contact_messages(self, check_cors=True):
         """Test retrieving contact messages"""
         return self.run_test(
             "Get Contact Messages",
             "GET",
             "contact",
-            200
+            200,
+            check_cors=check_cors
         )
 
-    def test_create_status_check(self, client_name):
+    def test_create_status_check(self, client_name, check_cors=True):
         """Test creating a status check"""
         return self.run_test(
             "Create Status Check",
             "POST",
             "status",
             200,
-            data={"client_name": client_name}
+            data={"client_name": client_name},
+            check_cors=check_cors
         )
 
-    def test_get_status_checks(self):
+    def test_get_status_checks(self, check_cors=True):
         """Test getting all status checks"""
         return self.run_test(
             "Get Status Checks",
             "GET",
             "status",
-            200
+            200,
+            check_cors=check_cors
+        )
+        
+    def test_options_preflight(self, endpoint):
+        """Test OPTIONS preflight request to an endpoint"""
+        return self.run_test(
+            f"OPTIONS preflight to /{endpoint}",
+            "OPTIONS",
+            endpoint,
+            200,
+            check_cors=True
         )
 
 def main():
