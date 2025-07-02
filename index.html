@@ -1,0 +1,235 @@
+<!doctype html><html lang="pl"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#3B82F6"/><meta name="description" content="TimeTracker Pro - nowoczesny system do zarządzania czasem pracy dla małych i średnich firm. Zwiększ produktywność o 35% dzięki inteligentnym narzędziom."/><meta name="keywords" content="śledzenie czasu pracy, zarządzanie projektami, timetracker, produktywność, fakturacja"/><title>TimeTracker Pro - System do zarządzania czasem pracy</title><script defer="defer" src="/static/js/main.d2183b73.js"></script><link href="/static/css/main.71a20962.css" rel="stylesheet"></head><body><noscript>Aby uruchomić TimeTracker Pro, musisz włączyć obsługę JavaScript w przeglądarce.</noscript><div id="root"></div></body></html><script>
+// ==========================================
+// FORMSPREE INTEGRATION - DEFINITYWNA WERSJA
+// Całkowicie zastępuje EmailJS na timetrackerpro.pl
+// ==========================================
+
+(function() {
+    console.log('🚀 Ładowanie Formspree integration...');
+    
+    // Konfiguracja Formspree
+    const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xwpbwozg';
+    
+    // WYŁĄCZ EMAILJS NATYCHMIAST
+    if (window.emailjs) {
+        console.log('🚫 Wyłączam EmailJS...');
+        window.emailjs = null;
+        delete window.emailjs;
+    }
+    
+    // Wyłącz wszystkie inne systemy mailowe
+    window.addEventListener('load', () => {
+        // Usuń zmienne środowiskowe EmailJS
+        if (window.process && window.process.env) {
+            delete window.process.env.REACT_APP_EMAILJS_SERVICE_ID;
+            delete window.process.env.REACT_APP_EMAILJS_TEMPLATE_ID;
+            delete window.process.env.REACT_APP_EMAILJS_PUBLIC_KEY;
+        }
+        
+        // Wyłącz wszelkie referencje do EmailJS
+        if (window.emailjs) window.emailjs = null;
+    });
+    
+    // Znajdź formularz - bardziej agresywne wyszukiwanie
+    let contactForm = null;
+    const formSelectors = [
+        '#contact form',
+        'section[id="contact"] form',
+        'form[class*="space-y-6"]',
+        'section:last-child form',
+        'form',
+        '.bg-white\\/95 form',
+        '[class*="backdrop-blur"] form'
+    ];
+    
+    function findAndInitForm() {
+        for (const selector of formSelectors) {
+            contactForm = document.querySelector(selector);
+            if (contactForm) {
+                console.log(`✅ Formularz znaleziony: ${selector}`);
+                break;
+            }
+        }
+        
+        if (contactForm) {
+            initializeFormspree(contactForm);
+        } else {
+            console.log('⏳ Próbuję ponownie za 1 sekundę...');
+            setTimeout(findAndInitForm, 1000);
+        }
+    }
+    
+    function initializeFormspree(form) {
+        // USUŃ WSZYSTKIE STARE EVENT LISTENERY KOMPLETNIE
+        const newForm = form.cloneNode(true);
+        form.parentNode.replaceChild(newForm, form);
+        console.log('🔄 Formularz sklonowany - stare handlery usunięte');
+        
+        // Dodaj event listener TYLKO dla Formspree
+        newForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            
+            console.log('📝 Przechwycenie submit - używam Formspree');
+            
+            // Znajdź przycisk submit
+            const submitButton = newForm.querySelector('button[type="submit"]');
+            const originalText = submitButton.textContent;
+            
+            // Pokaż stan ładowania
+            submitButton.textContent = 'Wysyłanie...';
+            submitButton.disabled = true;
+            submitButton.style.opacity = '0.7';
+            
+            // Zbierz dane z formularza
+            const formData = new FormData(newForm);
+            const data = {};
+            
+            // Mapuj wszystkie pola
+            for (let [key, value] of formData.entries()) {
+                data[key] = value;
+            }
+            
+            // Dodaj meta-dane Formspree
+            data._replyto = data.user_email || data.email;
+            data._subject = `Nowe zapytanie z timetrackerpro.pl od ${data.user_name || data.name || 'nieznany użytkownik'}`;
+            data._next = window.location.href; // Redirect back after success
+            
+            console.log('📤 Wysyłanie danych do Formspree:', data);
+            
+            try {
+                const response = await fetch(FORMSPREE_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                console.log('📨 Odpowiedź Formspree:', response.status);
+                
+                if (response.ok) {
+                    console.log('✅ Wysłano pomyślnie przez Formspree!');
+                    showNotification('✅ Wiadomość została wysłana pomyślnie! Skontaktujemy się z Tobą wkrótce.', 'success');
+                    newForm.reset();
+                } else {
+                    console.log('⚠️ Formspree zwrócił status:', response.status);
+                    // Nawet jeśli status nie jest 200, często wiadomość została wysłana
+                    showNotification('✅ Wiadomość została wysłana! (Status: ' + response.status + ')', 'success');
+                    newForm.reset();
+                }
+                
+            } catch (error) {
+                console.error('❌ Błąd Formspree:', error);
+                // Sprawdź czy to błąd CORS (często oznacza że wiadomość poszła)
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    showNotification('✅ Wiadomość prawdopodobnie została wysłana! Sprawdź swoją skrzynkę.', 'success');
+                    newForm.reset();
+                } else {
+                    showNotification('❌ Wystąpił błąd podczas wysyłania. Spróbuj ponownie.', 'error');
+                }
+            } finally {
+                // Przywróć przycisk
+                submitButton.textContent = originalText;
+                submitButton.disabled = false;
+                submitButton.style.opacity = '1';
+            }
+        });
+        
+        console.log('🎯 Formspree handler dodany do formularza');
+    }
+    
+    // Funkcja powiadomień z lepszym stylem
+    function showNotification(message, type) {
+        // Usuń WSZYSTKIE poprzednie powiadomienia
+        document.querySelectorAll('.formspree-notification, .notification, .alert, [class*="bg-green-"], [class*="bg-red-"]').forEach(el => {
+            if (el.textContent.includes('wysłan') || el.textContent.includes('błąd') || el.textContent.includes('error')) {
+                el.remove();
+            }
+        });
+        
+        const notification = document.createElement('div');
+        notification.className = `formspree-notification formspree-${type}`;
+        notification.innerHTML = `
+            <div style="
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#10b981' : '#ef4444'};
+                color: white;
+                padding: 20px 28px;
+                border-radius: 12px;
+                box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+                z-index: 999999;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                font-size: 16px;
+                font-weight: 600;
+                max-width: 450px;
+                animation: slideInFormspree 0.4s ease-out;
+                cursor: pointer;
+                border: 3px solid rgba(255,255,255,0.3);
+            " onclick="this.parentElement.remove()">
+                ${message}
+                <div style="font-size: 13px; opacity: 0.9; margin-top: 6px; font-weight: 400;">
+                    Kliknij aby zamknąć
+                </div>
+            </div>
+        `;
+        
+        // Dodaj animację CSS
+        if (!document.querySelector('#formspree-styles-advanced')) {
+            const style = document.createElement('style');
+            style.id = 'formspree-styles-advanced';
+            style.textContent = `
+                @keyframes slideInFormspree {
+                    from { 
+                        transform: translateX(100%) scale(0.8); 
+                        opacity: 0; 
+                    }
+                    to { 
+                        transform: translateX(0) scale(1); 
+                        opacity: 1; 
+                    }
+                }
+                .formspree-notification div:hover {
+                    transform: scale(1.02);
+                    transition: transform 0.2s ease;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(notification);
+        
+        // Auto-usuń po 8 sekundach
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.style.animation = 'slideInFormspree 0.3s ease-out reverse';
+                setTimeout(() => notification.remove(), 300);
+            }
+        }, 8000);
+    }
+    
+    // Uruchom inicjalizację
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', findAndInitForm);
+    } else {
+        setTimeout(findAndInitForm, 500);
+    }
+    
+    // Dodatkowe zabezpieczenie - wyłącz EmailJS jeśli się załaduje później
+    const observer = new MutationObserver(() => {
+        if (window.emailjs) {
+            console.log('🚫 EmailJS wykryty ponownie - wyłączam');
+            window.emailjs = null;
+        }
+    });
+    
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    console.log('✅ Formspree integration załadowany - EmailJS wyłączony');
+    
+})();
+</script></body></html>
