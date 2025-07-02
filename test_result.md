@@ -165,3 +165,9 @@ test_plan:
 agent_communication:
     - agent: "main"
       message: "Investigation complete: CORS configuration already includes '*' for all origins. External API call to api.net-pocket.com not found in current codebase. Ready to test backend CORS headers and contact form functionality."
+    - agent: "testing"
+      message: "First test revealed OPTIONS preflight request issue - returning echoed origin instead of wildcard."
+    - agent: "main"
+      message: "Updated CORS configuration to use only allow_origins=['*'] and set allow_credentials=False to fix OPTIONS preflight requests."
+    - agent: "testing"
+      message: "CORS fix confirmed successful. All backend tests now pass (9/9 - 100% success rate). OPTIONS preflight requests correctly return Access-Control-Allow-Origin: * header."
