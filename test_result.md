@@ -107,7 +107,7 @@ user_problem_statement: "Fix CORS error for TimeTracker Pro application: 'Access
 backend:
   - task: "CORS Configuration with Access-Control-Allow-Origin: *"
     implemented: true
-    working: "needs_testing"
+    working: "needs_retesting"
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
@@ -116,6 +116,9 @@ backend:
         - working: "needs_testing"
           agent: "main"
           comment: "Investigated backend CORS configuration. Found existing CORS middleware with allow_origins=['*'] already configured in lines 25-36. This should provide Access-Control-Allow-Origin: * as requested by user."
+        - working: "needs_retesting"
+          agent: "main"
+          comment: "Updated CORS configuration: Changed from mixed origins list to allow_origins=['*'] only, and set allow_credentials=False (required when using wildcard origin). This should fix OPTIONS preflight request issues identified in testing."
   
   - task: "External API Investigation - api.net-pocket.com"
     implemented: false
