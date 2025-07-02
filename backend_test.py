@@ -4,7 +4,7 @@ import sys
 from datetime import datetime
 
 class TimeTrackerAPITester:
-    def __init__(self, base_url="https://843c9703-c39e-433e-a001-4b9d0c9ee969.preview.emergentagent.com"):
+    def __init__(self, base_url="http://localhost:8001"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.tests_run = 0
