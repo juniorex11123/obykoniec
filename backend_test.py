@@ -7,7 +7,7 @@ from datetime import datetime
 class TimeTrackerAPITester:
     def __init__(self, base_url=None):
         if base_url is None:
-            base_url = os.environ.get('REACT_APP_BACKEND_URL', 'https://747ee636-a80b-43fa-bc2f-68baacfa57b0.preview.emergentagent.com')
+            base_url = os.environ.get('REACT_APP_BACKEND_URL', 'https://61a7374c-2ebb-41ed-a935-3bd065540abb.preview.emergentagent.com')
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.tests_run = 0
@@ -106,7 +106,7 @@ class TimeTrackerAPITester:
 
 def main():
     # Setup
-    backend_url = os.environ.get('REACT_APP_BACKEND_URL', 'https://747ee636-a80b-43fa-bc2f-68baacfa57b0.preview.emergentagent.com')
+    backend_url = os.environ.get('REACT_APP_BACKEND_URL', 'https://61a7374c-2ebb-41ed-a935-3bd065540abb.preview.emergentagent.com')
     tester = TimeTrackerAPITester(backend_url)
     test_client = f"test_client_{datetime.now().strftime('%Y%m%d%H%M%S')}"
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
