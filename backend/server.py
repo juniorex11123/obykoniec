@@ -22,15 +22,11 @@ app = FastAPI(
 )
 
 # CORS Configuration for home.pl hosting
+# Using ["*"] as allow_origins to ensure proper wildcard handling for all requests including OPTIONS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",  # Development
-        "https://timetrackerpro.pl",  # Production domain
-        "https://www.timetrackerpro.pl",  # Production with www
-        "*"  # Allow all origins for now
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],  # Allow all origins - this ensures proper wildcard handling
+    allow_credentials=False,  # Must be False when using "*" for origins
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
