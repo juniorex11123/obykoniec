@@ -60,7 +60,8 @@ class TimeTrackerAPITester:
                         cors_headers['Access-Control-Allow-Origin'] == '*' and
                         cors_headers['Access-Control-Allow-Methods'] is not None and
                         cors_headers['Access-Control-Allow-Headers'] is not None and
-                        cors_headers['Access-Control-Allow-Credentials'] == 'true'
+                        # With allow_origins=["*"], allow_credentials must be False
+                        cors_headers['Access-Control-Allow-Credentials'] is None
                     )
                 # For regular requests, we at least expect Allow-Origin
                 else:
