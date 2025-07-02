@@ -188,16 +188,26 @@ def main():
     print(f"🕒 Test started at: {timestamp}")
     print("=" * 80)
     
-    # Test health check
+    # CORS-specific tests
+    print("\n🔍 TESTING CORS CONFIGURATION")
+    print("=" * 80)
+    
+    # Test OPTIONS preflight requests
+    print("\n🔍 Testing OPTIONS preflight requests...")
+    tester.test_options_preflight("contact")
+    tester.test_options_preflight("health")
+    tester.test_options_preflight("")
+    
+    # Test health check with CORS
     health_success, _ = tester.test_health_check()
     if not health_success:
         print("❌ Health check failed, API may not be available")
         print("Continuing with other tests anyway...")
     
-    # Test root endpoint
+    # Test root endpoint with CORS
     tester.test_root_endpoint()
     
-    # Test contact form submission
+    # Test contact form submission with CORS
     contact_success, contact_response = tester.test_submit_contact_form(
         "Jan Testowy",
         "jan@test.pl",
@@ -206,11 +216,11 @@ def main():
         "To jest wiadomość testowa z systemu automatycznego testowania"
     )
     
-    # Test retrieving contact messages
+    # Test retrieving contact messages with CORS
     if contact_success:
         tester.test_get_contact_messages()
     
-    # Test status check endpoints
+    # Test status check endpoints with CORS
     success, response = tester.test_create_status_check(test_client)
     if success:
         print(f"✅ Successfully created status check with ID: {response.get('id')}")
@@ -222,6 +232,20 @@ def main():
     print(f"📊 Tests passed: {tester.tests_passed}/{tester.tests_run}")
     success_rate = (tester.tests_passed / tester.tests_run) * 100 if tester.tests_run > 0 else 0
     print(f"📈 Success rate: {success_rate:.2f}%")
+    
+    # Print CORS-specific results
+    print("\n🔍 CORS CONFIGURATION SUMMARY")
+    print("=" * 80)
+    
+    cors_success = all(result['cors_success'] for result in tester.cors_results)
+    if cors_success:
+        print("✅ CORS is properly configured for all tested endpoints")
+    else:
+        print("❌ CORS configuration issues detected:")
+        for result in tester.cors_results:
+            if not result['cors_success']:
+                print(f"  - Endpoint: /{result['endpoint']} (Method: {result['method']})")
+                print(f"    Headers: {json.dumps(result['cors_headers'], indent=2)}")
     
     return 0 if tester.tests_passed == tester.tests_run else 1
 
